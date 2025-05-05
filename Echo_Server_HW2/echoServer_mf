@@ -1,0 +1,8 @@
+echoServer: echo_server.o
+	gcc echo_server.o -o echoServer
+
+echo_server.o: echo_server.c echo_server.h
+	gcc -c echo_server.c
+
+clean:
+	rm *.o echoServer

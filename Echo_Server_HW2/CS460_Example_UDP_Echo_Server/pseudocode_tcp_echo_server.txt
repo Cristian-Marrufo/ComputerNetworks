@@ -1,0 +1,132 @@
+
+- include essentail libraries
+
+- define PORT, MAX_CLIENTS, and RCV_BUFFER_SIZE
+
+keep_server_running <- volatile unsigned int flag variable to indicate to the server to keep running. Initialize to 1 (1 means true in this case).
+
+// Function to chnage flag variable on 
+// keyboard interrupt signal (ctrl+c)
+function signal_handler(signal:int)
+{
+	- set the keep server running flag variable to 0 // 1 = true, 0 = false
+}
+
+
+
+function run_server()
+{
+	- Register the handler function with signal(...) to handle keyobard interrupt; // Look up hwo to handle keyboard interrup (ctrl+c) in 'C' on Google
+
+	- server_socket_descriptor <- Create the server socket;
+
+	- Set socket options to keep the server socket alive;
+
+	- server_socket_address <- Create and initialize the sockaddr_in to be used for binding the server socket;
+
+	- Bind the server socket and the server address;
+
+	- Set the non-blocking flag of server_socket_descriptor using fcntl(...); // Look this up on Google
+
+	- Set the server socket to listen mode;
+
+	- Initilaize the file descriptor sets (i.e., fd_set) to keep track of the set of active sockets and the set of sockets to read from; // Look fd_set and FD_ZERO up on Google
+
+	- Add the server socekt descriptor to the set of active sockets; // Use FD_SET(...). Look this up on Google.
+
+	- max_file_descriptor <- Set to server socket descriptor (as it is the only socket in the set at this moment);
+
+	- buffer <- A char array of size RCV_BUFFER_SIZE for receiving message from a client;
+
+
+	// Entering the main event loop:
+	while(keep_server_running == 1)
+	{
+
+		- set_sockets_to_read_from <- Set of active sockets' descriptors (i.e., connections);
+
+		- select(...) to check and wait until any socket in set_sockets_to_read_from has some activity; // Look upn select(...) on Google
+
+		- if select() resulted in an error, break out of the loop;
+
+		- for(all file_descriptors from 0 to max_file_descriptor)
+		  {
+
+		  		if(file_descriptor  is in set_sockets_to_read_from) // Use FD_ISSET(...). Look this up on Google
+		  		{
+
+
+		  			// If it's the server socket:
+		  			if(file_descriptor is server_socket_descriptor)
+		  			{
+
+		  				new_client_socket_descriptor <- A new client socket accepted by the server; // Non-blocking accept(...)
+
+		  				if (any errno other than EAGAIN or EWOULDBLOCK that resulted from non-blocking accept(...)) // Need to use the header <errno.h>
+		  				{
+		  					- print a message about the error;
+		  					- exit the current loop;
+		  				}
+
+		  				if(successfully accepted the new client)
+		  				{	
+							- Set the non-blocking flag of new_client_socket_descriptor using fcntl(...);
+
+		  					- Add new_client_socket_descriptor to set_active_sockets; // Use FD_SET(...)
+		  					
+		  					- if(new_client_socket_descriptor > max_file_descriptor)
+		  					  {
+		  					  	max_file_descriptor <- new_client_socket_descriptor;
+		  					  }
+
+		  				}
+
+		  			}
+
+		  			// If it's a client socket:
+		  			else
+		  			{
+
+		  				- num_bytes_read <- read(...) from the socket indicated by file_descriptor into buffer[RCV_BUFFER_SIZE]; // Look up read(...) on Google if you're unfamiliar with it
+
+		  				- if (num_bytes_read <=0 ) // means client terminated the connection
+		  				  {
+		  				  	
+		  				  	- close(...) this socket indicated by file_descriptor;
+
+		  				  	- Remove this socket indicated by file_descriptor from the set_active_sockets; // Use FD_CLR(...). Look this up on Google.
+		  				  }
+
+		  				  else // Client did not terminate connection. Echo (i.e., reply) the read message to the client:
+		  				  {
+
+		  				  	- write(...) the message received from client to the socket indicated by file_descriptor; // Look up read(...) on Google
+
+		  				  }
+
+
+		  			}
+
+		  		} // if(file_descriptor  is in set_sockets_to_read_from) ends here
+
+
+		  } // for(...) loop ends here
+
+
+
+
+	} // while(...) loop ends here
+
+	- close(...) server socket;
+	- printf() a message;
+	- return 0;
+
+} // func run_server ends here
+
+
+int main()
+{
+	- Call run_server();
+	- return 0;
+}
+

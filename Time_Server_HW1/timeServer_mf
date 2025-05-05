@@ -1,0 +1,8 @@
+output: time_server.o
+	gcc time_server.o -o output
+
+time_server.o: time_server.c time_server.h
+	gcc -c time_server.c
+
+clean:
+	rm *.o output
